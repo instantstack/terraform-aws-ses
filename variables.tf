@@ -4,9 +4,16 @@ variable "create" {
   default     = true
 }
 
+variable "create_domain_identity" {
+  description = "Set to false to prevent the module from creating a domain identity"
+  type        = bool
+  default     = true
+}
+
 variable "domain" {
   description = "The domain to create the SES identity for."
   type        = string
+  default     = ""
 }
 
 variable "tags" {
@@ -124,4 +131,13 @@ variable "ses_user_force_destroy" {
   description = "When true, forces the destruction of the SES user."
   type        = bool
   default     = false
+}
+
+variable "dedicated_ip_pools" {
+  description = "List of dedicated IP pools to create."
+  type        = list(object({
+    name         = string
+    scaling_mode = string
+  }))
+  default     = []
 }

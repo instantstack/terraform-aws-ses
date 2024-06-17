@@ -3,13 +3,13 @@ locals {
 }
 
 resource "aws_ses_domain_identity" "ses_domain" {
-  count = var.create ? 1 : 0
+  count = var.create && var.create_domain_identity ? 1 : 0
 
   domain = var.domain
 }
 
 resource "aws_route53_record" "amazonses_verification_record" {
-  count = var.create && var.verify_domain ? 1 : 0
+  count = var.create && var.create_domain_identity && var.verify_domain ? 1 : 0
 
   zone_id = var.zone_id
   name    = "_amazonses.${var.domain}"
@@ -19,13 +19,13 @@ resource "aws_route53_record" "amazonses_verification_record" {
 }
 
 resource "aws_ses_domain_dkim" "ses_domain_dkim" {
-  count = var.create ? 1 : 0
+  count = var.create && var.create_domain_identity ? 1 : 0
 
   domain = join("", aws_ses_domain_identity.ses_domain[*].domain)
 }
 
 resource "aws_route53_record" "amazonses_dkim_record" {
-  count = var.create && var.verify_dkim ? 3 : 0
+  count = var.create && var.create_domain_identity && var.verify_dkim ? 3 : 0
 
   zone_id = var.zone_id
   name    = "${element(aws_ses_domain_dkim.ses_domain_dkim[0].dkim_tokens, count.index)}._domainkey.${var.domain}"
@@ -35,7 +35,7 @@ resource "aws_route53_record" "amazonses_dkim_record" {
 }
 
 resource "aws_route53_record" "amazonses_spf_record" {
-  count = var.create && var.create_spf_record ? 1 : 0
+  count = var.create && var.create_domain_identity && var.create_spf_record ? 1 : 0
 
   zone_id = var.zone_id
   name    = length(var.custom_from_subdomain) > 0 ? join("", aws_ses_domain_mail_from.custom_mail_from[*].mail_from_domain) : join("", aws_ses_domain_identity.ses_domain[*].domain)
@@ -45,18 +45,26 @@ resource "aws_route53_record" "amazonses_spf_record" {
 }
 
 resource "aws_ses_domain_mail_from" "custom_mail_from" {
-  count                  = local.custom_from_subdomain_enabled ? 1 : 0
+  count                  = var.create && local.custom_from_subdomain_enabled ? 1 : 0
   domain                 = join("", aws_ses_domain_identity.ses_domain[*].domain)
   mail_from_domain       = "${one(var.custom_from_subdomain)}.${join("", aws_ses_domain_identity.ses_domain[*].domain)}"
   behavior_on_mx_failure = var.custom_from_behavior_on_mx_failure
 }
 
 resource "aws_route53_record" "custom_mail_from_mx" {
-  count = local.custom_from_subdomain_enabled ? 1 : 0
+  count = var.create && local.custom_from_subdomain_enabled ? 1 : 0
 
   zone_id = var.zone_id
   name    = join("", aws_ses_domain_mail_from.custom_mail_from[*].mail_from_domain)
   type    = "MX"
   ttl     = "600"
   records = ["10 feedback-smtp.${join("", data.aws_region.current[*].name)}.amazonses.com"]
+}
+
+resource "aws_sesv2_dedicated_ip_pool" "pools" {
+  count = var.create ? length(var.dedicated_ip_pools) : 0
+  pool_name    = var.dedicated_ip_pools[count.index].name
+  scaling_mode = var.dedicated_ip_pools[count.index].scaling_mode
+
+  tags = var.tags
 }

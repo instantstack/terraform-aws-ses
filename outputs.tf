@@ -24,12 +24,12 @@ output "custom_from_domain" {
 }
 
 output "user_name" {
-  value       = aws_iam_group.ses_users[0].name
+  value       = try(aws_iam_group.ses_users[0].name, "")
   description = "Normalized IAM user name."
 }
 
 output "user_arn" {
-  value       = aws_iam_group.ses_users[0].arn
+  value       = try(aws_iam_group.ses_users[0].arn, "")
   description = "The ARN assigned by AWS for this user."
 }
 
@@ -40,18 +40,18 @@ output "ses_group_name" {
 
 output "secret_access_key" {
   sensitive   = true
-  value       = aws_iam_access_key.default[0].secret
+  value       = try(aws_iam_access_key.default[0].secret, "")
   description = "The IAM secret for usage with SES API. This will be written to the state file in plain text."
 }
 
 # https://docs.aws.amazon.com/ses/latest/DeveloperGuide/smtp-credentials.html
 output "ses_smtp_password" {
   sensitive   = true
-  value       = aws_iam_access_key.default[0].ses_smtp_password_v4
+  value       = try(aws_iam_access_key.default[0].ses_smtp_password_v4, "")
   description = "The SMTP password. This will be written to the state file in plain text."
 }
 
 output "access_key_id" {
-  value       = aws_iam_access_key.default[0].id
+  value       = try(aws_iam_access_key.default[0].id, "")
   description = "The SMTP user which is access key ID."
 }
