@@ -134,8 +134,8 @@ resource "aws_sesv2_configuration_set" "configs_without_tracking_options" {
     for_each = try(each.value.delivery_options, {}) != {} ? { delivery_options = each.value.delivery_options } : {}
 
     content {
-      sending_pool_name = lookup(each.value, "sending_pool_name", null)
-      tls_policy        = lookup(each.value, "tls_policy", null)
+      sending_pool_name = lookup(delivery_options.value, "sending_pool_name", null)
+      tls_policy        = lookup(delivery_options.value, "tls_policy", null)
     }
   }
 
