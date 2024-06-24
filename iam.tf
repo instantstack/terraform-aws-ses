@@ -1,10 +1,10 @@
 locals {
   create_group_enabled = var.create && var.ses_group_enabled
   create_user_enabled  = var.create && var.ses_user_enabled
-  
-  username             = local.create_user_enabled ? coalesce(var.ses_user_name, "ses-user-${random_id.id.0.hex}") : null
-  access_key           = local.create_user_enabled ? aws_iam_access_key.default : null
-  ses_group_name       = local.create_group_enabled ? var.ses_group_name : null
+
+  username       = local.create_user_enabled ? coalesce(var.ses_user_name, "ses-user-${random_id.id.0.hex}") : null
+  access_key     = local.create_user_enabled ? aws_iam_access_key.default : null
+  ses_group_name = local.create_group_enabled ? var.ses_group_name : null
 }
 
 resource "random_id" "id" {
@@ -51,7 +51,7 @@ resource "aws_iam_access_key" "default" {
   count = local.create_user_enabled ? 1 : 0
   user  = local.username
 
-  depends_on = [ aws_iam_user.default ]
+  depends_on = [aws_iam_user.default]
 }
 
 resource "aws_iam_user_policy" "sending_emails" {

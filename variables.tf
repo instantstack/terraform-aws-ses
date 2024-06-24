@@ -86,17 +86,6 @@ variable "iam_allowed_resources" {
   default     = []
 }
 
-variable "iam_access_key_max_age" {
-  type        = number
-  description = "Maximum age of IAM access key (seconds). Defaults to 30 days. Set to 0 to disable expiration."
-  default     = 2592000
-
-  validation {
-    condition     = var.iam_access_key_max_age >= 0
-    error_message = "The iam_access_key_max_age must be 0 (disabled) or greater."
-  }
-}
-
 variable "ses_group_enabled" {
   type        = bool
   description = "Creates a group with permission to send emails from SES domain"
@@ -135,9 +124,53 @@ variable "ses_user_force_destroy" {
 
 variable "dedicated_ip_pools" {
   description = "List of dedicated IP pools to create."
-  type        = list(object({
+  type = list(object({
     name         = string
     scaling_mode = string
   }))
-  default     = []
+  default = []
+}
+
+variable "configuration_sets" {
+  type = map(object({
+    name = string
+    delivery_options = optional(object({
+      sending_pool_name = optional(string)
+      tls_policy        = optional(string)
+    }), {})
+    reputation_options = optional(object({
+      reputation_metrics_enabled = optional(bool)
+    }), {})
+    sending_options = optional(object({
+      sending_enabled = optional(bool)
+    }), {})
+    suppression_options = optional(object({
+      suppressed_email_addresses = optional(list(string))
+    }), {})
+    tracking_options = optional(object({
+      custom_redirect_domain = optional(string)
+    }), {})
+    event_destinations = optional(list(object(
+      {
+        name                 = string
+        service              = optional(string)
+        enabled              = optional(bool)
+        matching_event_types = optional(list(string))
+        service_options = optional(object(
+          {
+            default_dimension_value  = optional(string, null)
+            dimension_name           = optional(string, null)
+            dimension_value_source   = optional(string, null)
+            topic_arn                = optional(string, null)
+            delivery_stream_arn      = optional(string, null)
+            iam_role_arn             = optional(string, null)
+            pinpoint_application_arn = optional(string, null)
+          }
+        ))
+      }
+    )), [])
+    tags = optional(map(string))
+  }))
+  description = "List of SES configuration sets to create. In service_options you can specify only the needed fields related to the service. To see more: https://registry.terraform.io/providers/hashicorp/aws/5.54.1/docs/resources/sesv2_configuration_set"
+  default     = {}
 }
