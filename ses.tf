@@ -1,6 +1,6 @@
 # domain configuration 
 locals {
-  custom_from_subdomain_enabled = length(var.custom_from_subdomain) > 0
+  custom_from_subdomain_enabled = try(var.custom_from_subdomain, null) != null
 }
 
 resource "aws_ses_domain_identity" "ses_domain" {
@@ -39,16 +39,28 @@ resource "aws_route53_record" "amazonses_spf_record" {
   count = var.create && var.create_domain_identity && var.create_spf_record ? 1 : 0
 
   zone_id = var.zone_id
-  name    = length(var.custom_from_subdomain) > 0 ? join("", aws_ses_domain_mail_from.custom_mail_from[*].mail_from_domain) : join("", aws_ses_domain_identity.ses_domain[*].domain)
+  name    = try(var.custom_from_subdomain, null) != null ? join("", aws_ses_domain_mail_from.custom_mail_from[*].mail_from_domain) : join("", aws_ses_domain_identity.ses_domain[*].domain)
   type    = "TXT"
   ttl     = "3600"
   records = ["v=spf1 include:amazonses.com -all"]
 }
 
+resource "aws_route53_record" "route_53_dmarc_txt" {
+  count = var.create && var.create_domain_identity && var.create_dmarc_record ? 1 : 0
+
+  zone_id = var.zone_id
+  name    = "_dmarc.${var.domain}"
+  type    = "TXT"
+  ttl     = "300"
+  records = [
+    "v=DMARC1;p=quarantine;pct=75;rua=mailto:${var.dmarc_email}"
+  ]
+}
+
 resource "aws_ses_domain_mail_from" "custom_mail_from" {
   count                  = var.create && local.custom_from_subdomain_enabled ? 1 : 0
   domain                 = join("", aws_ses_domain_identity.ses_domain[*].domain)
-  mail_from_domain       = "${one(var.custom_from_subdomain)}.${join("", aws_ses_domain_identity.ses_domain[*].domain)}"
+  mail_from_domain       = "${var.custom_from_subdomain}.${join("", aws_ses_domain_identity.ses_domain[*].domain)}"
   behavior_on_mx_failure = var.custom_from_behavior_on_mx_failure
 }
 

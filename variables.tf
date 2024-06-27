@@ -46,19 +46,25 @@ variable "create_spf_record" {
   default     = false
 }
 
+variable "create_dmarc_record" {
+  type        = bool
+  description = "If provided the module will create a DMARC record for `domain`."
+  default     = false
+}
+
+variable "dmarc_email" {
+  type        = string
+  description = "The email address to send DMARC reports to."
+  default     = ""
+}
+
 variable "custom_from_subdomain" {
-  type        = list(string)
+  type        = string
   description = "If provided the module will create a custom subdomain for the `From` address."
-  default     = []
-  nullable    = false
+  default     = null
 
   validation {
-    condition     = length(var.custom_from_subdomain) <= 1
-    error_message = "Only one custom_from_subdomain is allowed."
-  }
-
-  validation {
-    condition     = length(var.custom_from_subdomain) > 0 ? can(regex("^[a-zA-Z0-9-]+$", var.custom_from_subdomain[0])) : true
+    condition     = try(var.custom_from_subdomain, null) != null ? can(regex("^[a-zA-Z0-9-]+$", var.custom_from_subdomain)) : true
     error_message = "The custom_from_subdomain must be a valid subdomain."
   }
 }
